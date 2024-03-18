@@ -119,17 +119,6 @@ abstract class AbstractListMultimap<K extends @Nullable Object, V extends @Nulla
   }
 
   /**
-   * {@inheritDoc}
-   *
-   * <p>Though the method signature doesn't say so explicitly, the returned map has {@link List}
-   * values.
-   */
-  @Override
-  public Map<K, Collection<V>> asMap() {
-    return super.asMap();
-  }
-
-  /**
    * Compares the specified object to this multimap for equality.
    *
    * <p>Two {@code ListMultimap} instances are equal if, for each key, they contain the same values
