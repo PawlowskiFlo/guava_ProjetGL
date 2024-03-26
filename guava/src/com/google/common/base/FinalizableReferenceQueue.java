@@ -151,15 +151,15 @@ public class FinalizableReferenceQueue implements Closeable {
 
   final PhantomReference<Object> frqRef;
 
-  /** Whether or not the background thread started successfully. */
-  final boolean threadStarted;
+  /** Whether the background thread started successfully. */
+  boolean threadStarted;
 
   /** Constructs a new queue. */
   public FinalizableReferenceQueue() {
     // We could start the finalizer lazily, but I'd rather it blow up early.
     queue = new ReferenceQueue<>();
     frqRef = new PhantomReference<>(this, queue);
-    boolean threadStarted = false;
+    threadStarted = false;
     try {
       startFinalizer.invoke(null, FinalizableReference.class, queue, frqRef);
       threadStarted = true;
@@ -172,8 +172,6 @@ public class FinalizableReferenceQueue implements Closeable {
               + " Reference cleanup will only occur when new references are created.",
           t);
     }
-
-    this.threadStarted = threadStarted;
   }
 
   @Override
