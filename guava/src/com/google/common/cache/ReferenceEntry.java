@@ -15,7 +15,7 @@
 package com.google.common.cache;
 
 import com.google.common.annotations.GwtIncompatible;
-import com.google.common.cache.LocalCache.ValueReference;
+import com.google.common.cache.valuereference.ValueReference;
 import javax.annotation.CheckForNull;
 
 /**
@@ -40,7 +40,7 @@ import javax.annotation.CheckForNull;
  */
 @GwtIncompatible
 @ElementTypesAreNonnullByDefault
-interface ReferenceEntry<K, V> {
+public interface ReferenceEntry<K, V> {
   /** Returns the value reference from this entry. */
   @CheckForNull
   ValueReference<K, V> getValueReference();

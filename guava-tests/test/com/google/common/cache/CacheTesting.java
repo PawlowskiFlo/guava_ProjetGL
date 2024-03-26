@@ -27,7 +27,7 @@ import static junit.framework.Assert.assertTrue;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.LocalCache.LocalLoadingCache;
 import com.google.common.cache.LocalCache.Segment;
-import com.google.common.cache.LocalCache.ValueReference;
+import com.google.common.cache.valuereference.ValueReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
