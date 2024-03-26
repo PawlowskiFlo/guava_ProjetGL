@@ -116,17 +116,6 @@ abstract class AbstractSetMultimap<K extends @Nullable Object, V extends @Nullab
   }
 
   /**
-   * {@inheritDoc}
-   *
-   * <p>Though the method signature doesn't say so explicitly, the returned map has {@link Set}
-   * values.
-   */
-  @Override
-  public Map<K, Collection<V>> asMap() {
-    return super.asMap();
-  }
-
-  /**
    * Stores a key-value pair in the multimap.
    *
    * @param key key to store in the multimap
