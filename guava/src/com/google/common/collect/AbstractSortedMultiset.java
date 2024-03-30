@@ -79,10 +79,13 @@ abstract class AbstractSortedMultiset<E extends @Nullable Object> extends Abstra
     return entryIterator.hasNext() ? entryIterator.next() : null;
   }
 
-  @Override
-  @CheckForNull
-  public Entry<E> pollFirstEntry() {
-    Iterator<Entry<E>> entryIterator = entryIterator();
+
+  /**
+   * factorymethod used in pollFirstEntry
+   * @param entryIterator the itarator we need to know
+   * @return the removed elmement if iterator had a Next element
+   */
+  Entry<E> removeElement(Iterator<Entry<E>> entryIterator) {
     if (entryIterator.hasNext()) {
       Entry<E> result = entryIterator.next();
       result = Multisets.immutableEntry(result.getElement(), result.getCount());
@@ -91,18 +94,18 @@ abstract class AbstractSortedMultiset<E extends @Nullable Object> extends Abstra
     }
     return null;
   }
+  @Override
+  @CheckForNull
+  public Entry<E> pollFirstEntry() {
+    Iterator<Entry<E>> entryIterator = entryIterator();
+    return removeElement(entryIterator);
+  }
 
   @Override
   @CheckForNull
   public Entry<E> pollLastEntry() {
     Iterator<Entry<E>> entryIterator = descendingEntryIterator();
-    if (entryIterator.hasNext()) {
-      Entry<E> result = entryIterator.next();
-      result = Multisets.immutableEntry(result.getElement(), result.getCount());
-      entryIterator.remove();
-      return result;
-    }
-    return null;
+    return removeElement(entryIterator);
   }
 
   @Override
