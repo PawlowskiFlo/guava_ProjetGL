@@ -35,12 +35,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Ticker;
 import com.google.common.cache.LocalCache.EntryFactory;
-import com.google.common.cache.LocalCache.LoadingValueReference;
 import com.google.common.cache.LocalCache.LocalLoadingCache;
 import com.google.common.cache.LocalCache.LocalManualCache;
 import com.google.common.cache.LocalCache.Segment;
 import com.google.common.cache.LocalCache.Strength;
 import com.google.common.cache.valuereference.ValueReference;
+import com.google.common.cache.valuereference.LoadingValueReference;
 import com.google.common.cache.TestingCacheLoaders.CountingLoader;
 import com.google.common.cache.TestingRemovalListeners.CountingRemovalListener;
 import com.google.common.cache.TestingRemovalListeners.QueuingRemovalListener;
@@ -780,7 +780,7 @@ public class LocalCacheTest extends TestCase {
     @SuppressWarnings("unchecked")
     LoadingValueReference<Object, Object> valueReference =
         (LoadingValueReference) newEntry.getValueReference();
-    assertFalse(valueReference.futureValue.isDone());
+    assertFalse(valueReference.getFutureValue().isDone());
     startSignal.countDown();
 
     try {
