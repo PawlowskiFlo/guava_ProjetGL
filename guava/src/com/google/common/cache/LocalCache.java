@@ -23,7 +23,6 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
 import com.google.common.annotations.GwtCompatible;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.VisibleForTesting;
@@ -36,7 +35,10 @@ import com.google.common.cache.CacheBuilder.NullListener;
 import com.google.common.cache.CacheBuilder.OneWeigher;
 import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
 import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
-import com.google.common.cache.valuereference.ValueReference;
+import com.google.common.cache.valuereference.*;
+import com.google.common.cache.valuereference.weightedvalue.WeightedSoftValueReference;
+import com.google.common.cache.valuereference.weightedvalue.WeightedStrongValueReference;
+import com.google.common.cache.valuereference.weightedvalue.WeightedWeakValueReference;
 import com.google.common.collect.AbstractSequentialIterator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -61,7 +63,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.AbstractCollection;
 import java.util.AbstractMap;
@@ -1432,200 +1433,6 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
     }
   }
 
-  /** References a weak value. */
-  static class WeakValueReference<K, V> extends WeakReference<V> implements ValueReference<K, V> {
-    final ReferenceEntry<K, V> entry;
-
-    WeakValueReference(ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry) {
-      super(referent, queue);
-      this.entry = entry;
-    }
-
-    @Override
-    public int getWeight() {
-      return 1;
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getEntry() {
-      return entry;
-    }
-
-    @Override
-    public void notifyNewValue(V newValue) {}
-
-    @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new WeakValueReference<>(queue, value, entry);
-    }
-
-    @Override
-    public boolean isLoading() {
-      return false;
-    }
-
-    @Override
-    public boolean isActive() {
-      return true;
-    }
-
-    @Override
-    public V waitForValue() {
-      return get();
-    }
-  }
-
-  /** References a soft value. */
-  static class SoftValueReference<K, V> extends SoftReference<V> implements ValueReference<K, V> {
-    final ReferenceEntry<K, V> entry;
-
-    SoftValueReference(ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry) {
-      super(referent, queue);
-      this.entry = entry;
-    }
-
-    @Override
-    public int getWeight() {
-      return 1;
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getEntry() {
-      return entry;
-    }
-
-    @Override
-    public void notifyNewValue(V newValue) {}
-
-    @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new SoftValueReference<>(queue, value, entry);
-    }
-
-    @Override
-    public boolean isLoading() {
-      return false;
-    }
-
-    @Override
-    public boolean isActive() {
-      return true;
-    }
-
-    @Override
-    public V waitForValue() {
-      return get();
-    }
-  }
-
-  /** References a strong value. */
-  static class StrongValueReference<K, V> implements ValueReference<K, V> {
-    final V referent;
-
-    StrongValueReference(V referent) {
-      this.referent = referent;
-    }
-
-    @Override
-    public V get() {
-      return referent;
-    }
-
-    @Override
-    public int getWeight() {
-      return 1;
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getEntry() {
-      return null;
-    }
-
-    @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return this;
-    }
-
-    @Override
-    public boolean isLoading() {
-      return false;
-    }
-
-    @Override
-    public boolean isActive() {
-      return true;
-    }
-
-    @Override
-    public V waitForValue() {
-      return get();
-    }
-
-    @Override
-    public void notifyNewValue(V newValue) {}
-  }
-
-  /** References a weak value. */
-  static final class WeightedWeakValueReference<K, V> extends WeakValueReference<K, V> {
-    final int weight;
-
-    WeightedWeakValueReference(
-        ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry, int weight) {
-      super(queue, referent, entry);
-      this.weight = weight;
-    }
-
-    @Override
-    public int getWeight() {
-      return weight;
-    }
-
-    @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new WeightedWeakValueReference<>(queue, value, entry, weight);
-    }
-  }
-
-  /** References a soft value. */
-  static final class WeightedSoftValueReference<K, V> extends SoftValueReference<K, V> {
-    final int weight;
-
-    WeightedSoftValueReference(
-        ReferenceQueue<V> queue, V referent, ReferenceEntry<K, V> entry, int weight) {
-      super(queue, referent, entry);
-      this.weight = weight;
-    }
-
-    @Override
-    public int getWeight() {
-      return weight;
-    }
-
-    @Override
-    public ValueReference<K, V> copyFor(
-        ReferenceQueue<V> queue, V value, ReferenceEntry<K, V> entry) {
-      return new WeightedSoftValueReference<>(queue, value, entry, weight);
-    }
-  }
-
-  /** References a strong value. */
-  static final class WeightedStrongValueReference<K, V> extends StrongValueReference<K, V> {
-    final int weight;
-
-    WeightedStrongValueReference(V referent, int weight) {
-      super(referent);
-      this.weight = weight;
-    }
-
-    @Override
-    public int getWeight() {
-      return weight;
-    }
-  }
 
   /**
    * Applies a supplemental hash function to a given hash code, which defends against poor quality
@@ -2908,6 +2715,7 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
       table = newTable;
       this.count = newCount;
     }
+
 
     boolean replace(K key, int hash, V oldValue, V newValue) {
       lock();
