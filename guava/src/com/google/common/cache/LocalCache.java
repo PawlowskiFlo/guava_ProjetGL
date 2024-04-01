@@ -18,7 +18,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.cache.CacheBuilder.NULL_TICKER;
 import static com.google.common.cache.CacheBuilder.UNSET_INT;
-import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 import static java.util.Collections.unmodifiableSet;
@@ -35,10 +34,15 @@ import com.google.common.cache.CacheBuilder.NullListener;
 import com.google.common.cache.CacheBuilder.OneWeigher;
 import com.google.common.cache.CacheLoader.InvalidCacheLoadException;
 import com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException;
+import com.google.common.cache.referenceentry.AbstractReferenceEntry;
+import com.google.common.cache.referenceentry.strongtype.StrongAccessEntry;
+import com.google.common.cache.referenceentry.strongtype.StrongAccessWriteEntry;
+import com.google.common.cache.referenceentry.strongtype.StrongWriteEntry;
 import com.google.common.cache.valuereference.*;
 import com.google.common.cache.valuereference.weightedvalue.WeightedSoftValueReference;
 import com.google.common.cache.valuereference.weightedvalue.WeightedStrongValueReference;
 import com.google.common.cache.valuereference.weightedvalue.WeightedWeakValueReference;
+import com.google.common.cache.referenceentry.*;
 import com.google.common.collect.AbstractSequentialIterator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -49,7 +53,6 @@ import com.google.common.primitives.Ints;
 import com.google.common.util.concurrent.ExecutionError;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
@@ -787,95 +790,9 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
     public void setPreviousInWriteQueue(ReferenceEntry<Object, Object> previous) {}
   }
 
-  abstract static class AbstractReferenceEntry<K, V> implements ReferenceEntry<K, V>{
-    @Override
-    public ValueReference<K, V> getValueReference() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setValueReference(ValueReference<K, V> valueReference) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getNext() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getHash() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public K getKey() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long getAccessTime() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setAccessTime(long time) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getNextInAccessQueue() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setNextInAccessQueue(ReferenceEntry<K, V> next) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInAccessQueue() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setPreviousInAccessQueue(ReferenceEntry<K, V> previous) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long getWriteTime() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setWriteTime(long time) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getNextInWriteQueue() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setNextInWriteQueue(ReferenceEntry<K, V> next) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInWriteQueue() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setPreviousInWriteQueue(ReferenceEntry<K, V> previous) {
-      throw new UnsupportedOperationException();
-    }
-  }
 
   @SuppressWarnings("unchecked") // impl never uses a parameter or returns any non-null value
-  static <K, V> ReferenceEntry<K, V> nullEntry() {
+  public static <K, V> ReferenceEntry<K, V> nullEntry() {
     return (ReferenceEntry<K, V>) NullEntry.INSTANCE;
   }
 
@@ -913,234 +830,6 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
   @SuppressWarnings("unchecked") // impl never uses a parameter or returns any non-null value
   static <E> Queue<E> discardingQueue() {
     return (Queue) DISCARDING_QUEUE;
-  }
-
-  /*
-   * Note: All of this duplicate code sucks, but it saves a lot of memory. If only Java had mixins!
-   * To maintain this code, make a change for the strong reference type. Then, cut and paste, and
-   * replace "Strong" with "Soft" or "Weak" within the pasted text. The primary difference is that
-   * strong entries store the key reference directly while soft and weak entries delegate to their
-   * respective superclasses.
-   */
-
-  /** Used for strongly-referenced keys. */
-  static class StrongEntry<K, V> extends AbstractReferenceEntry<K, V> {
-    final K key;
-
-    StrongEntry(K key, int hash, @CheckForNull ReferenceEntry<K, V> next) {
-      this.key = key;
-      this.hash = hash;
-      this.next = next;
-    }
-
-    @Override
-    public K getKey() {
-      return this.key;
-    }
-
-    // The code below is exactly the same for each entry type.
-
-    final int hash;
-    @CheckForNull final ReferenceEntry<K, V> next;
-    volatile ValueReference<K, V> valueReference = unset();
-
-    @Override
-    public ValueReference<K, V> getValueReference() {
-      return valueReference;
-    }
-
-    @Override
-    public void setValueReference(ValueReference<K, V> valueReference) {
-      this.valueReference = valueReference;
-    }
-
-    @Override
-    public int getHash() {
-      return hash;
-    }
-
-    @Override
-    public ReferenceEntry<K, V> getNext() {
-      return next;
-    }
-  }
-
-  static final class StrongAccessEntry<K, V> extends StrongEntry<K, V> {
-    StrongAccessEntry(K key, int hash, @CheckForNull ReferenceEntry<K, V> next) {
-      super(key, hash, next);
-    }
-
-    // The code below is exactly the same for each access entry type.
-
-    volatile long accessTime = Long.MAX_VALUE;
-
-    @Override
-    public long getAccessTime() {
-      return accessTime;
-    }
-
-    @Override
-    public void setAccessTime(long time) {
-      this.accessTime = time;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> nextAccess = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getNextInAccessQueue() {
-      return nextAccess;
-    }
-
-    @Override
-    public void setNextInAccessQueue(ReferenceEntry<K, V> next) {
-      this.nextAccess = next;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> previousAccess = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInAccessQueue() {
-      return previousAccess;
-    }
-
-    @Override
-    public void setPreviousInAccessQueue(ReferenceEntry<K, V> previous) {
-      this.previousAccess = previous;
-    }
-  }
-
-  static final class StrongWriteEntry<K, V> extends StrongEntry<K, V> {
-    StrongWriteEntry(K key, int hash, @CheckForNull ReferenceEntry<K, V> next) {
-      super(key, hash, next);
-    }
-
-    // The code below is exactly the same for each write entry type.
-
-    volatile long writeTime = Long.MAX_VALUE;
-
-    @Override
-    public long getWriteTime() {
-      return writeTime;
-    }
-
-    @Override
-    public void setWriteTime(long time) {
-      this.writeTime = time;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> nextWrite = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getNextInWriteQueue() {
-      return nextWrite;
-    }
-
-    @Override
-    public void setNextInWriteQueue(ReferenceEntry<K, V> next) {
-      this.nextWrite = next;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> previousWrite = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInWriteQueue() {
-      return previousWrite;
-    }
-
-    @Override
-    public void setPreviousInWriteQueue(ReferenceEntry<K, V> previous) {
-      this.previousWrite = previous;
-    }
-  }
-
-  static final class StrongAccessWriteEntry<K, V> extends StrongEntry<K, V> {
-    StrongAccessWriteEntry(K key, int hash, @CheckForNull ReferenceEntry<K, V> next) {
-      super(key, hash, next);
-    }
-
-    // The code below is exactly the same for each access entry type.
-
-    volatile long accessTime = Long.MAX_VALUE;
-
-    @Override
-    public long getAccessTime() {
-      return accessTime;
-    }
-
-    @Override
-    public void setAccessTime(long time) {
-      this.accessTime = time;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> nextAccess = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getNextInAccessQueue() {
-      return nextAccess;
-    }
-
-    @Override
-    public void setNextInAccessQueue(ReferenceEntry<K, V> next) {
-      this.nextAccess = next;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> previousAccess = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInAccessQueue() {
-      return previousAccess;
-    }
-
-    @Override
-    public void setPreviousInAccessQueue(ReferenceEntry<K, V> previous) {
-      this.previousAccess = previous;
-    }
-
-    // The code below is exactly the same for each write entry type.
-
-    volatile long writeTime = Long.MAX_VALUE;
-
-    @Override
-    public long getWriteTime() {
-      return writeTime;
-    }
-
-    @Override
-    public void setWriteTime(long time) {
-      this.writeTime = time;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> nextWrite = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getNextInWriteQueue() {
-      return nextWrite;
-    }
-
-    @Override
-    public void setNextInWriteQueue(ReferenceEntry<K, V> next) {
-      this.nextWrite = next;
-    }
-
-    // Guarded By Segment.this
-    @Weak ReferenceEntry<K, V> previousWrite = nullEntry();
-
-    @Override
-    public ReferenceEntry<K, V> getPreviousInWriteQueue() {
-      return previousWrite;
-    }
-
-    @Override
-    public void setPreviousInWriteQueue(ReferenceEntry<K, V> previous) {
-      this.previousWrite = previous;
-    }
   }
 
   /** Used for weakly-referenced keys. */
