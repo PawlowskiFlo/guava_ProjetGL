@@ -16,6 +16,8 @@ package com.google.common.base;
 
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.J2ktIncompatible;
+import com.google.common.base.exceptions.ImpossibleToCleanException;
+
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import javax.annotation.CheckForNull;
@@ -39,7 +41,7 @@ public abstract class FinalizableWeakReference<T> extends WeakReference<T>
    * @param referent to weakly reference
    * @param queue that should finalize the referent
    */
-  protected FinalizableWeakReference(@CheckForNull T referent, FinalizableReferenceQueue queue) {
+  protected FinalizableWeakReference(@CheckForNull T referent, FinalizableReferenceQueue queue) throws ImpossibleToCleanException {
     super(referent, queue.queue);
     queue.cleanUp();
   }

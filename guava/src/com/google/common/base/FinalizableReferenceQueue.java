@@ -17,6 +17,8 @@ package com.google.common.base;
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.J2ktIncompatible;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.exceptions.ImpossibleToCleanException;
+
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -177,7 +179,11 @@ public class FinalizableReferenceQueue implements Closeable {
   @Override
   public void close() {
     frqRef.enqueue();
-    cleanUp();
+      try {
+          cleanUp();
+      } catch (ImpossibleToCleanException e) {
+          throw new RuntimeException(e);
+      }
   }
 
   /**
@@ -185,7 +191,7 @@ public class FinalizableReferenceQueue implements Closeable {
    * FinalizableReference#finalizeReferent()} on them until the queue is empty. This method is a
    * no-op if the background thread was created successfully.
    */
-  void cleanUp() {
+  void cleanUp() throws ImpossibleToCleanException {
     if (threadStarted) {
       return;
     }
@@ -201,6 +207,7 @@ public class FinalizableReferenceQueue implements Closeable {
         ((FinalizableReference) reference).finalizeReferent();
       } catch (Throwable t) {
         logger.log(Level.SEVERE, "Error cleaning up after reference.", t);
+        throw new ImpossibleToCleanException("Error cleaning up after reference.");
       }
     }
   }

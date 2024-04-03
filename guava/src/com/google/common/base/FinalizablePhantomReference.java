@@ -16,6 +16,8 @@ package com.google.common.base;
 
 import com.google.common.annotations.GwtIncompatible;
 import com.google.common.annotations.J2ktIncompatible;
+import com.google.common.base.exceptions.ImpossibleToCleanException;
+
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import javax.annotation.CheckForNull;
@@ -41,7 +43,7 @@ public abstract class FinalizablePhantomReference<T> extends PhantomReference<T>
    * @param referent to phantom reference
    * @param queue that should finalize the referent
    */
-  protected FinalizablePhantomReference(@CheckForNull T referent, FinalizableReferenceQueue queue) {
+  protected FinalizablePhantomReference(@CheckForNull T referent, FinalizableReferenceQueue queue) throws ImpossibleToCleanException {
     super(referent, queue.queue);
     queue.cleanUp();
   }
