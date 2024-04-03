@@ -246,38 +246,38 @@ public final class Functions {
   private static class FunctionComposition<
           A extends @Nullable Object, B extends @Nullable Object, C extends @Nullable Object>
       implements Function<A, C>, Serializable {
-    private final Function<B, C> g;
-    private final Function<A, ? extends B> f;
+    private final Function<B, C> functionG;
+    private final Function<A, ? extends B> functionF;
 
     public FunctionComposition(Function<B, C> g, Function<A, ? extends B> f) {
-      this.g = checkNotNull(g);
-      this.f = checkNotNull(f);
+      this.functionG = checkNotNull(g);
+      this.functionF = checkNotNull(f);
     }
 
     @Override
     @ParametricNullness
     public C apply(@ParametricNullness A a) {
-      return g.apply(f.apply(a));
+      return functionG.apply(functionF.apply(a));
     }
 
     @Override
     public boolean equals(@CheckForNull Object obj) {
       if (obj instanceof FunctionComposition) {
         FunctionComposition<?, ?, ?> that = (FunctionComposition<?, ?, ?>) obj;
-        return f.equals(that.f) && g.equals(that.g);
+        return functionF.equals(that.functionF) && functionG.equals(that.functionG);
       }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return f.hashCode() ^ g.hashCode();
+      return functionF.hashCode() ^ functionG.hashCode();
     }
 
     @Override
     public String toString() {
       // TODO(cpovirk): maybe make this look like the method call does ("Functions.compose(...)")
-      return g + "(" + f + ")";
+      return functionG + "(" + functionF + ")";
     }
 
     private static final long serialVersionUID = 0;
