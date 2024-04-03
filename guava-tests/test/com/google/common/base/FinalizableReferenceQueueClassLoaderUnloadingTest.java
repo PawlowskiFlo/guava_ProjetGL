@@ -20,6 +20,7 @@ import static com.google.common.base.StandardSystemProperty.JAVA_CLASS_PATH;
 import static com.google.common.base.StandardSystemProperty.JAVA_SPECIFICATION_VERSION;
 import static com.google.common.base.StandardSystemProperty.PATH_SEPARATOR;
 
+import com.google.common.base.exceptions.ImpossibleToCleanException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.testing.GcFinalization;
 import java.io.Closeable;
@@ -68,7 +69,7 @@ public class FinalizableReferenceQueueClassLoaderUnloadingTest extends TestCase 
    */
 
   public static class MyFinalizableWeakReference extends FinalizableWeakReference<Object> {
-    public MyFinalizableWeakReference(Object x, FinalizableReferenceQueue queue) {
+    public MyFinalizableWeakReference(Object x, FinalizableReferenceQueue queue) throws ImpossibleToCleanException {
       super(x, queue);
     }
 
@@ -184,14 +185,19 @@ public class FinalizableReferenceQueueClassLoaderUnloadingTest extends TestCase 
 
     @Override
     public WeakReference<Object> call() {
-      WeakReference<Object> wr =
-          new FinalizableWeakReference<Object>(new Integer(23), frq) {
-            @Override
-            public void finalizeReferent() {
-              finalized.release();
-            }
-          };
-      return wr;
+        WeakReference<Object> wr =
+                null;
+        try {
+            wr = new FinalizableWeakReference<Object>(new Integer(23), frq) {
+              @Override
+              public void finalizeReferent() {
+                finalized.release();
+              }
+            };
+        } catch (ImpossibleToCleanException e) {
+            throw new RuntimeException(e);
+        }
+        return wr;
     }
   }
 

@@ -17,6 +17,7 @@
 package com.google.common.base;
 
 import com.google.common.annotations.GwtIncompatible;
+import com.google.common.base.exceptions.ImpossibleToCleanException;
 import com.google.common.base.internal.Finalizer;
 import com.google.common.testing.GcFinalization;
 import java.lang.ref.ReferenceQueue;
@@ -48,7 +49,7 @@ public class FinalizableReferenceQueueTest extends TestCase {
   }
 
 
-  public void testFinalizeReferentCalled() {
+  public void testFinalizeReferentCalled() throws ImpossibleToCleanException {
     final MockReference reference = new MockReference(frq = new FinalizableReferenceQueue());
 
     GcFinalization.awaitDone(
@@ -64,7 +65,7 @@ public class FinalizableReferenceQueueTest extends TestCase {
 
     volatile boolean finalizeReferentCalled;
 
-    MockReference(FinalizableReferenceQueue frq) {
+    MockReference(FinalizableReferenceQueue frq) throws ImpossibleToCleanException {
       super(new Object(), frq);
     }
 
@@ -81,7 +82,7 @@ public class FinalizableReferenceQueueTest extends TestCase {
   private WeakReference<ReferenceQueue<Object>> queueReference;
 
 
-  public void testThatFinalizerStops() {
+  public void testThatFinalizerStops() throws ImpossibleToCleanException {
     weaklyReferenceQueue();
     GcFinalization.awaitClear(queueReference);
   }
@@ -90,7 +91,7 @@ public class FinalizableReferenceQueueTest extends TestCase {
   @Nullable FinalizableWeakReference<Object> reference;
 
   /** Create the FRQ in a method that goes out of scope so that we're sure it will be reclaimed. */
-  private void weaklyReferenceQueue() {
+  private void weaklyReferenceQueue() throws ImpossibleToCleanException {
     frq = new FinalizableReferenceQueue();
     queueReference = new WeakReference<>(frq.queue);
 
