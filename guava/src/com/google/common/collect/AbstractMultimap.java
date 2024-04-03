@@ -116,7 +116,11 @@ abstract class AbstractMultimap<K extends @Nullable Object, V extends @Nullable 
   @Override
   public Collection<Entry<K, V>> entries() {
     Collection<Entry<K, V>> result = entries;
-    return (result == null) ? entries = createEntries() : result;
+    if(result == null ) {
+      entries = createEntries();
+      result = entries;
+    }
+    return result;
   }
 
   abstract Collection<Entry<K, V>> createEntries();
@@ -164,7 +168,11 @@ abstract class AbstractMultimap<K extends @Nullable Object, V extends @Nullable 
   @Override
   public Set<K> keySet() {
     Set<K> result = keySet;
-    return (result == null) ? keySet = createKeySet() : result;
+    if(result ==null){
+      keySet = createKeySet();
+      result = keySet;
+    }
+    return result;
   }
 
   abstract Set<K> createKeySet();
@@ -174,7 +182,11 @@ abstract class AbstractMultimap<K extends @Nullable Object, V extends @Nullable 
   @Override
   public Multiset<K> keys() {
     Multiset<K> result = keys;
-    return (result == null) ? keys = createKeys() : result;
+    if(result ==null) {
+      keys= createKeys();
+      result =keys;
+    }
+    return result;
   }
 
   abstract Multiset<K> createKeys();
@@ -184,7 +196,11 @@ abstract class AbstractMultimap<K extends @Nullable Object, V extends @Nullable 
   @Override
   public Collection<V> values() {
     Collection<V> result = values;
-    return (result == null) ? values = createValues() : result;
+    if(result ==null) {
+      values= createValues();
+      result=values;
+    }
+    return result;
   }
 
   abstract Collection<V> createValues();
@@ -230,7 +246,11 @@ abstract class AbstractMultimap<K extends @Nullable Object, V extends @Nullable 
   @Override
   public Map<K, Collection<V>> asMap() {
     Map<K, Collection<V>> result = asMap;
-    return (result == null) ? asMap = createAsMap() : result;
+    if(result == null) {
+      asMap = createAsMap();
+      result =asMap;
+    }
+    return result;
   }
 
   abstract Map<K, Collection<V>> createAsMap();
