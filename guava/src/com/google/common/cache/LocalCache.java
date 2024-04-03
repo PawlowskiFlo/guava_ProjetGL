@@ -2684,41 +2684,7 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
    * current model.
    */
   static final class WriteQueue<K, V> extends AbstractQueue<ReferenceEntry<K, V>> {
-    final ReferenceEntry<K, V> head =
-        new AbstractReferenceEntry<K, V>() {
-
-          @Override
-          public long getWriteTime() {
-            return Long.MAX_VALUE;
-          }
-
-          @Override
-          public void setWriteTime(long time) {}
-
-          @Weak ReferenceEntry<K, V> nextWrite = this;
-
-          @Override
-          public ReferenceEntry<K, V> getNextInWriteQueue() {
-            return nextWrite;
-          }
-
-          @Override
-          public void setNextInWriteQueue(ReferenceEntry<K, V> next) {
-            this.nextWrite = next;
-          }
-
-          @Weak ReferenceEntry<K, V> previousWrite = this;
-
-          @Override
-          public ReferenceEntry<K, V> getPreviousInWriteQueue() {
-            return previousWrite;
-          }
-
-          @Override
-          public void setPreviousInWriteQueue(ReferenceEntry<K, V> previous) {
-            this.previousWrite = previous;
-          }
-        };
+    final ReferenceEntry<K, V> head = new WriteReferenceEntry<K,V>();
 
     // implements Queue
 
@@ -2827,41 +2793,7 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
    * current model.
    */
   static final class AccessQueue<K, V> extends AbstractQueue<ReferenceEntry<K, V>> {
-    final ReferenceEntry<K, V> head =
-        new AbstractReferenceEntry<K, V>() {
-
-          @Override
-          public long getAccessTime() {
-            return Long.MAX_VALUE;
-          }
-
-          @Override
-          public void setAccessTime(long time) {}
-
-          @Weak ReferenceEntry<K, V> nextAccess = this;
-
-          @Override
-          public ReferenceEntry<K, V> getNextInAccessQueue() {
-            return nextAccess;
-          }
-
-          @Override
-          public void setNextInAccessQueue(ReferenceEntry<K, V> next) {
-            this.nextAccess = next;
-          }
-
-          @Weak ReferenceEntry<K, V> previousAccess = this;
-
-          @Override
-          public ReferenceEntry<K, V> getPreviousInAccessQueue() {
-            return previousAccess;
-          }
-
-          @Override
-          public void setPreviousInAccessQueue(ReferenceEntry<K, V> previous) {
-            this.previousAccess = previous;
-          }
-        };
+    final ReferenceEntry<K, V> head = new AccessReferenceEntry<K,V>();
 
     // implements Queue
 
