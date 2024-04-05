@@ -87,6 +87,8 @@ public final class CacheBuilderSpec {
     void parse(CacheBuilderSpec spec, String key, @CheckForNull String value);
   }
 
+  /** String message used in exceptions*/
+  private static final String VALUE_OMITTED_MESSAGE = "omitted value of key ";
   /** Splits each key-value pair. */
   private static final Splitter KEYS_SPLITTER = Splitter.on(',').trimResults();
 
@@ -293,7 +295,7 @@ public final class CacheBuilderSpec {
     @Override
     public void parse(CacheBuilderSpec spec, String key, @Nullable String value) {
       if (isNullOrEmpty(value)) {
-        throw new IllegalArgumentException("value of key " + key + " omitted");
+        throw new IllegalArgumentException(VALUE_OMITTED_MESSAGE + key );
       }
       try {
         parseInteger(spec, Integer.parseInt(value));
@@ -311,7 +313,7 @@ public final class CacheBuilderSpec {
     @Override
     public void parse(CacheBuilderSpec spec, String key, @Nullable String value) {
       if (isNullOrEmpty(value)) {
-        throw new IllegalArgumentException("value of key " + key + " omitted");
+        throw new IllegalArgumentException(VALUE_OMITTED_MESSAGE + key);
       }
       try {
         parseLong(spec, Long.parseLong(value));
@@ -422,7 +424,7 @@ public final class CacheBuilderSpec {
     @Override
     public void parse(CacheBuilderSpec spec, String key, @CheckForNull String value) {
       if (isNullOrEmpty(value)) {
-        throw new IllegalArgumentException("value of key " + key + " omitted");
+        throw new IllegalArgumentException(VALUE_OMITTED_MESSAGE + key);
       }
       try {
         char lastChar = value.charAt(value.length() - 1);
