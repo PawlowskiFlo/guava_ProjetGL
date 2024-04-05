@@ -2061,6 +2061,18 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
       int newCount = count;
       AtomicReferenceArray<ReferenceEntry<K, V>> newTable = newEntryArray(oldCapacity << 1);
       threshold = newTable.length() * 3 / 4;
+      rehashEntries(oldTable, newTable);
+      table = newTable;
+      this.count = newCount;
+    }
+
+    /**
+     * loops through each entry in our old table, calculates its new index in the new table and places the entry in the correct location
+     * @param oldTable oldTable from expand()
+     * @param newTable newTable created in expand()
+     */
+    private void rehashEntries(AtomicReferenceArray<ReferenceEntry<K, V>> oldTable, AtomicReferenceArray<ReferenceEntry<K, V>> newTable) {
+      int oldCapacity = oldTable.length();
       int newMask = newTable.length() - 1;
       for (int oldIndex = 0; oldIndex < oldCapacity; ++oldIndex) {
         // We need to guarantee that any existing reads of old Map can
@@ -2075,41 +2087,55 @@ public class LocalCache<K, V> extends AbstractMap<K, V> implements ConcurrentMap
           if (next == null) {
             newTable.set(headIndex, head);
           } else {
-            // Reuse the consecutive sequence of nodes with the same target
-            // index from the end of the list. tail points to the first
-            // entry in the reusable list.
-            ReferenceEntry<K, V> tail = head;
-            int tailIndex = headIndex;
-            for (ReferenceEntry<K, V> e = next; e != null; e = e.getNext()) {
-              int newIndex = e.getHash() & newMask;
-              if (newIndex != tailIndex) {
-                // The index changed. We'll need to copy the previous entry.
-                tailIndex = newIndex;
-                tail = e;
-              }
-            }
-            newTable.set(tailIndex, tail);
-
-            // Clone nodes leading up to the tail.
-            for (ReferenceEntry<K, V> e = head; e != tail; e = e.getNext()) {
-              int newIndex = e.getHash() & newMask;
-              ReferenceEntry<K, V> newNext = newTable.get(newIndex);
-              ReferenceEntry<K, V> newFirst = copyEntry(e, newNext);
-              if (newFirst != null) {
-                newTable.set(newIndex, newFirst);
-              } else {
-                removeCollectedEntry(e);
-                newCount--;
-              }
-            }
+            rehashList(head, newTable, newMask);
           }
         }
       }
-      table = newTable;
-      this.count = newCount;
+    }
+
+    /**
+     *iterates through the list of entries starting from the head, recalculates the index of each entry
+     * in the new hash table using the new mask.
+     * @param head the head of the table
+     * @param newTable table created before
+     * @param newMask new mask applicated
+     */
+    private void rehashList(ReferenceEntry<K, V> head, AtomicReferenceArray<ReferenceEntry<K, V>> newTable, int newMask) {
+      ReferenceEntry<K, V> tail = head;
+      int tailIndex = head.getHash() & newMask;
+      for (ReferenceEntry<K, V> e = head.getNext(); e != null; e = e.getNext()) {
+        int newIndex = e.getHash() & newMask;
+        if (newIndex != tailIndex) {
+          tailIndex = newIndex;
+          tail = e;
+        }
+      }
+      newTable.set(tailIndex, tail);
+
+      cloneAndSetEntries(head, tail, newTable, newMask);
     }
 
 
+    /**
+     *  clone an entry and place it in the hash table
+     * @param head head of the table
+     * @param tail tail of the table
+     * @param newTable the new created tabme
+     * @param newMask new mask applicated
+     */
+    private void cloneAndSetEntries(ReferenceEntry<K, V> head, ReferenceEntry<K, V> tail, AtomicReferenceArray<ReferenceEntry<K, V>> newTable, int newMask) {
+      for (ReferenceEntry<K, V> e = head; e != tail; e = e.getNext()) {
+        int newIndex = e.getHash() & newMask;
+        ReferenceEntry<K, V> newNext = newTable.get(newIndex);
+        ReferenceEntry<K, V> newFirst = copyEntry(e, newNext);
+        if (newFirst != null) {
+          newTable.set(newIndex, newFirst);
+        } else {
+          removeCollectedEntry(e);
+          count--;
+        }
+      }
+    }
     boolean replace(K key, int hash, V oldValue, V newValue) {
       lock();
       try {
